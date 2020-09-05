@@ -1,6 +1,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include "Shader.h"
 
 // GLFW = Graphics Library Framework
 // Pre-Steps
@@ -28,7 +29,7 @@ void BuildCompileShaders(int& shaderProgram) {
     "void main()\n"
     "{\n"
     "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-	"}\n\0";
+	"}\n";
 
 	// Vertex Shader - create, bind source, compile, check if success
 	int vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -102,14 +103,15 @@ int main() {
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
 	// Build, Compile, Bind to shader program
-	int shaderProgram = glCreateProgram();
-	BuildCompileShaders(shaderProgram);
+	//int shaderProgram = glCreateProgram();
+	//BuildCompileShaders(shaderProgram);
+	Shader thisShader("shader.vs", "shader.fs");
 
 	float vertices[] = {
-		 0.5f, 0.5f, 0.0f, // top right
-		 0.5f,-0.5f, 0.0f, // bottom right
-		-0.5f,-0.5f, 0.0f, // bottom left
-		-0.5f, 0.5f, 0.0f  // top left
+		 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // top right
+		 0.5f,-0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // bottom right
+		-0.5f,-0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom left
+		-0.5f, 0.5f, 0.0f, 1.0f, 1.0f, 1.0f  // top left
 	};
 
 	unsigned int indices[] = {
@@ -138,8 +140,10 @@ int main() {
 	// 4. Set Attrib Pointers which will be stored in VAO
 	// (vertex attrib location, size 3 for Vec3, type, normalized coords false - already normalized, stride, offset)
 	// Gets data from currently bound vertex buffer
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3*sizeof(float)));
 	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
 
 	// 5. Unbind VBO and VAO - as bindings have been stored in VAO
 	// Do not unbind EBO as EBO is stored directly in the VAO
@@ -149,6 +153,8 @@ int main() {
 
 	// For drawing in wireframe mode
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+	float offset = 0.0f;
 
 	// Simple render loop
 	while (!glfwWindowShouldClose(window)) {
@@ -163,7 +169,10 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// Draw Triangle - bind shader program, bind VAO, draw, unbind VAO
-		glUseProgram(shaderProgram);
+		//glUseProgram(shaderProgram);
+		thisShader.Use();
+		offset += 0.00002f;
+		thisShader.SetFloat("xoffset", offset);
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); // 6 vertices, indices type GL_UNSIGNED_INT
 		//glBindVertexArray(0);
@@ -177,8 +186,8 @@ int main() {
 	// De-allocate resources
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
-	//glDeleteBuffers(1, &EBO);
-	glDeleteProgram(shaderProgram);
+	glDeleteBuffers(1, &EBO);
+	//glDeleteProgram(shaderProgram);
 
 	// Terminate window as soon as out of render loop
 	glfwTerminate();
